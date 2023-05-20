@@ -7,7 +7,8 @@ This is Sandy's custom URL shortener that works through Redis.
 I wanted to learn how to use custom TLS Redis and I wanted to make a URL shortener.
 So I did both.
 
-Done. hah.
+Done. hah. See [nagito](https://github.com/thecsw/nagito), which is a program that
+talks to this server to generate short URLs.
 
 Well, on my website, I also have many gallery pages, which are powered by OneDrive that
 have really long URLs. I wanted to shorten them so that I can share them more easily.
