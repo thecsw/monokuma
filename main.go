@@ -69,6 +69,8 @@ func main() {
 
 	// Set up the router.
 	r := chi.NewRouter()
+	// Show the real IP.
+	r.Use(middleware.RealIP)
 	// Set up the middleware.
 	r.Use(middleware.Logger)
 	// Disable caching.
