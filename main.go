@@ -122,7 +122,7 @@ func main() {
 // hello is the homepage.
 func hello(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("hello, this is sandy's url shortener"))
+	w.Write([]byte("hello, this is sandy's url shortener, powered by https://github.com/thecsw/monokuma"))
 }
 
 // createLink creates a new link.
