@@ -65,8 +65,6 @@ func main() {
 	r.Use(middleware.Logger)
 	// Disable caching.
 	r.Use(middleware.NoCache)
-	// Recover from panics.
-	r.Use(middleware.Recoverer)
 	// Remove trailing slashes.
 	r.Use(middleware.RedirectSlashes)
 	// Set up CORS.
@@ -78,19 +76,14 @@ func main() {
 		AllowCredentials: true,
 		MaxAge:           300,
 	}))
-	// Get the real IP.
-	r.Use(middleware.RealIP)
-
-	// Set up the bearer middleware.
-	r.Use(rei.BearerMiddleware(*auth))
-
-	// Set up the profiler.
-	r.Mount("/debug", middleware.Profiler())
-
 	// Set up the routes.
-	// -----------------
-	// Create a new link.
-	r.Post("/create", createLink)
+
+	// Set up the API admin routes.
+	r.Group(func(r chi.Router) {
+		r.Use(rei.BearerMiddleware(*auth))
+		r.Post("/create", createLink)
+	})
+
 	// Get the homepage.
 	r.Get("/", hello)
 	// Get a link.
