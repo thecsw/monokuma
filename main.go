@@ -15,6 +15,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/patrickmn/go-cache"
 	"github.com/thecsw/pid"
 	"github.com/thecsw/rei"
 )
@@ -24,6 +25,13 @@ var (
 	targetUrl *string
 	// monomi is the database connection.
 	monomi *dangan
+
+	// keyToUrlExpire is the time after which a key to url mapping expires.
+	keyToUrlExpire = 60 * time.Minute
+	// KeytoUrlCleanup is the time after which the key to url cache is cleaned up.
+	KeytoUrlCleanup = 10 * time.Minute
+	// keyToUrl is the key to url cache (faster than a redis network overhead).
+	keyToUrl = cache.New(keyToUrlExpire, KeytoUrlCleanup)
 )
 
 func main() {
@@ -171,6 +179,13 @@ func getLink(w http.ResponseWriter, r *http.Request) {
 	// Get the key from the URL.
 	key := chi.URLParam(r, "key")
 
+	// Check the cache for the key.
+	if finalUrl, found := keyToUrl.Get(key); found {
+		// Redirect to the link.
+		http.Redirect(w, r, finalUrl.(string), http.StatusMovedPermanently)
+		return
+	}
+
 	// If the key is empty, return an error.
 	linkb64, found, err := monomi.getLink(key)
 	if err != nil {
@@ -186,6 +201,12 @@ func getLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Decode the link.
+	finalUrl := string(rei.Atob(linkb64))
+
+	// Add the mapping to the cache.
+	keyToUrl.Add(key, finalUrl, cache.DefaultExpiration)
+
 	// Redirect to the link.
-	http.Redirect(w, r, string(rei.Atob(linkb64)), http.StatusMovedPermanently)
+	http.Redirect(w, r, finalUrl, http.StatusMovedPermanently)
 }
