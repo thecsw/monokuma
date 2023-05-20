@@ -1,0 +1,2 @@
+export MONOKUMA_REDIS_USER=user
+export MONOKUMA_REDIS_PASS=pass
