@@ -22,7 +22,7 @@ require (
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/thecsw/oneiros v0.0.0-20210201230132-8b3c1a965de2 // indirect
 	github.com/thecsw/pid v0.1.0 // indirect
-	github.com/thecsw/rei v0.0.0-20230520052844-37280cb1000d // indirect
+	github.com/thecsw/rei v0.0.0-20230520200126-160ae664571f // indirect
 	github.com/tklauser/go-sysconf v0.3.11 // indirect
 	github.com/tklauser/numcpus v0.6.0 // indirect
 	github.com/tmthrgd/go-hex v0.0.0-20190904060850-447a3041c3bc // indirect

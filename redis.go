@@ -273,6 +273,20 @@ func (d *dangan) getUniqueKey(customKey string) (string, error) {
 	return "", fmt.Errorf("couldn't generate a unique key after %d tries", maxNumGenTries)
 }
 
+// exportLinks returns all the links in the database in the format:
+// key,link
+func (d *dangan) exportLinks() ([]string, error) {
+	links, err := d.getter.HGetAll(context.Background(), keyToLinkTable).Result()
+	if err != nil {
+		return nil, fmt.Errorf("getting all links: %w", err)
+	}
+	out := make([]string, 0, len(links))
+	for key, link := range links {
+		out = append(out, fmt.Sprintf("%s,%s", key, link))
+	}
+	return out, nil
+}
+
 // keyExists returns true if the given key exists in the given hash table. It
 // returns false if the key does not exist. If there is an error, it returns
 // false and the error.

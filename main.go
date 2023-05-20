@@ -27,9 +27,9 @@ var (
 	monomi *dangan
 
 	// keyToUrlExpire is the time after which a key to url mapping expires.
-	keyToUrlExpire = 60 * time.Minute
+	keyToUrlExpire = 24 * time.Hour
 	// KeytoUrlCleanup is the time after which the key to url cache is cleaned up.
-	KeytoUrlCleanup = 10 * time.Minute
+	KeytoUrlCleanup = 1 * time.Hour
 	// keyToUrl is the key to url cache (faster than a redis network overhead).
 	keyToUrl = cache.New(keyToUrlExpire, KeytoUrlCleanup)
 )
@@ -90,6 +90,7 @@ func main() {
 	r.Group(func(r chi.Router) {
 		r.Use(rei.BearerMiddleware(*auth))
 		r.Post("/create", createLink)
+		r.Get("/export", exportLinks)
 	})
 
 	// Get the homepage.
@@ -202,11 +203,25 @@ func getLink(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Decode the link.
-	finalUrl := string(rei.Atob(linkb64))
+	finalUrl := string(rei.AtobMust(linkb64))
 
 	// Add the mapping to the cache.
 	keyToUrl.Add(key, finalUrl, cache.DefaultExpiration)
 
 	// Redirect to the link.
 	http.Redirect(w, r, finalUrl, http.StatusMovedPermanently)
+}
+
+func exportLinks(w http.ResponseWriter, r *http.Request) {
+	// Get the links.
+	links, err := monomi.exportLinks()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("critical failure during export: " + err.Error()))
+		return
+	}
+
+	// Return the links.
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(strings.Join(links, "\n")))
 }
