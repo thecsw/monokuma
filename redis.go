@@ -62,10 +62,8 @@ var (
 	maxNumGenTries *int
 )
 
-var (
-	// errKeyExists is returned when a key already exists
-	errKeyExists = errors.New("key already exists")
-)
+// errKeyExists is returned when a key already exists
+var errKeyExists = errors.New("key already exists")
 
 // dangan is a redis client, with two connections: one for pushing and one for
 // getting. This is done because redis does not allow a single connection to
@@ -114,6 +112,7 @@ const (
 	maxNumKeepAliveFailures = 100
 )
 
+// keepAlive pings the redis server every 10 seconds to keep the connection alive.
 func (d *dangan) keepAlive() {
 	numFailures := 0
 

@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -130,100 +129,64 @@ func hello(w http.ResponseWriter, r *http.Request) {
 
 // createLink creates a new link.
 func createLink(w http.ResponseWriter, r *http.Request) {
-	// Read the body.
-	body, err := io.ReadAll(r.Body)
+	// Create the link.
+	key, code, err := operationCreateLink(r.Body, r.URL.Query().Get("key"))
 
-	// If there was an error reading the body, return an error.
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "couldn't read POST body: %s", err.Error())
+	// If there were no errors, return the key with the url.
+	if err == nil && code == Success {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(strings.TrimRight(*targetUrl, "/") + "/" + key))
 		return
 	}
 
-	// If the body is empty, return an error.
-	if len(body) < 1 {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("empty body"))
-		return
-	}
-
-	// Trim the body.
-	link := strings.TrimSpace(string(body))
-
-	// If the body is too long, return an error.
-	if len(strings.Split(link, "\n")) > 1 {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("too many lines, need only 1"))
-		return
-	}
-
-	// If the body is not a link, return an error.
-	if !URLRegexp.MatchString(link) {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("not a link"))
-		return
-	}
-
-	// If the body is a link, create a new link.
-	key, err := monomi.writeLink(rei.Btao([]byte(link)), r.URL.Query().Get("key"))
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "couldn't create the link: %s", err.Error())
-		return
-	}
-
-	// Return the new link.
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(strings.TrimRight(*targetUrl, "/") + "/" + key))
+	// If there was an error, return the error.
+	w.WriteHeader(monokumaHttpCode(code))
+	w.Write([]byte(err.Error()))
 }
 
 // getLink gets a link.
 func getLink(w http.ResponseWriter, r *http.Request) {
 	// Get the key from the URL.
 	key := chi.URLParam(r, "key")
+	finalUrl, code, err := operationKeyToLink(key)
 
-	// Check the cache for the key.
-	if finalUrl, found := keyToUrl.Get(key); found {
-		// Redirect to the link.
-		http.Redirect(w, r, finalUrl.(string), http.StatusMovedPermanently)
-		return
-	}
-
-	// If the key is empty, return an error.
-	linkb64, found, err := monomi.getLink(key)
+	// If there was an error, return an error.
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("critical failure during retrieval: " + err.Error()))
-		return
+		w.WriteHeader(monokumaHttpCode(code))
+		w.Write([]byte(err.Error()))
 	}
 
-	// If the key is not found, return an error.
-	if !found {
-		w.WriteHeader(http.StatusNotFound)
-		fmt.Fprintf(w, "short url for %s not found", key)
-		return
-	}
-
-	// Decode the link.
-	finalUrl := string(rei.AtobMust(linkb64))
-
-	// Add the mapping to the cache.
-	keyToUrl.Add(key, finalUrl, cache.DefaultExpiration)
-
-	// Redirect to the link.
-	http.Redirect(w, r, finalUrl, http.StatusMovedPermanently)
+	// If there was no error, redirect to the link.
+	http.Redirect(w, r, finalUrl, http.StatusFound)
 }
 
+// exportLinks exports all the links.
 func exportLinks(w http.ResponseWriter, r *http.Request) {
-	// Get the links.
-	links, err := monomi.exportLinks()
+	links, code, err := operationExportLinks()
+
+	// Return an error if found.
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("critical failure during export: " + err.Error()))
+		w.WriteHeader(monokumaHttpCode(code))
+		w.Write([]byte(err.Error()))
 		return
 	}
 
-	// Return the links.
+	// Give the links.
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(strings.Join(links, "\n")))
+}
+
+// monokumaHttpCode converts a MonokumaStatusCode to an HTTP status code.
+func monokumaHttpCode(code MonokumaStatusCode) int {
+	switch code {
+	case LinkFound:
+		return http.StatusFound
+	case LinkNotFound:
+		return http.StatusNotFound
+	case BadKey, BadLink:
+		return http.StatusBadRequest
+	case Success:
+		return http.StatusOK
+	}
+	return http.StatusInternalServerError
 }
