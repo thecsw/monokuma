@@ -32,7 +32,7 @@ const (
 
 // keyRegexp is the regular expression for a Monokuma key.
 // It must be between 3 and 10 characters long and only contain alphanumeric characters.
-var keyRegexp = regexp.MustCompile(`^[0-9a-zA-Z]{3,10}$`)
+var keyRegexp = regexp.MustCompile(`^[-0-9a-zA-Z]{3,10}$`)
 
 // operationCreateLink takes a link and returns a key.
 func operationCreateLink(linkReader io.Reader, customKey string) (string, MonokumaStatusCode, error) {
@@ -58,6 +58,11 @@ func operationCreateLink(linkReader io.Reader, customKey string) (string, Monoku
 	// If the link does not match the regular expression, return an error.
 	if !URLRegexp.MatchString(link) {
 		return "", BadLink, fmt.Errorf("link is invalid")
+	}
+
+	// Check the key against the regular expression.
+	if !keyRegexp.MatchString(customKey) {
+		return "", BadKey, fmt.Errorf("key %s is invalid", customKey)
 	}
 
 	// Try to write the link.
