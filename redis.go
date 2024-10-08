@@ -249,7 +249,7 @@ func (d *dangan) getUniqueKey(customKey string) (string, error) {
 		}
 		// if it exists, send an error
 		if exists {
-			return "", fmt.Errorf("custom key already exists", errKeyExists)
+			return "", fmt.Errorf("custom key already exists: %w", errKeyExists)
 		}
 		return customKey, nil
 	}
