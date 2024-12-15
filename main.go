@@ -46,6 +46,7 @@ func main() {
 	redisPort = flag.Int("redis-port", 6379, "redis port")
 	redisHost = flag.String("redis-host", "localhost", "redis host")
 	redisDB = flag.Int("redis-db", 0, "redis database")
+	redisUsername = flag.String("redis-user", "", "redis user")
 
 	// Redis SSL specific.
 	redisTLS = flag.Bool("redis-tls", false, "use TLS")

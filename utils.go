@@ -32,19 +32,18 @@ func gen() string {
 	return string(res)
 }
 
-// ensureFileExists checks if file exists, exits if not.
-func ensureFileExists(path, description string) {
+// pathMustExist checks if file exists, exits if not.
+func pathMustExist(path, description string) {
 	if !rei.FileMustExist(path) {
 		fmt.Printf("%s '%s' does not exist\n", description, path)
 		os.Exit(1)
 	}
 }
 
-// getEnvOrExit gets environment variable or exits if it's not set.
-func getEnvOrExit(envname string, target *string) {
-	*target = os.Getenv(envname)
-	if *target == "" {
-		fmt.Printf("environment variable '%s' is not set\n", envname)
-		os.Exit(1)
+// getEnv gets environment variable or exits if it's not set.
+func getEnv(envname string) *string {
+	if val, ok := os.LookupEnv(envname); ok {
+		return &val
 	}
+	return nil
 }

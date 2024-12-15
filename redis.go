@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -34,6 +35,9 @@ const (
 
 	connPusher = "pusher"
 	connGetter = "getter"
+
+	// See the nopass section in https://redis.io/docs/latest/operate/oss_and_stack/management/config-file/
+	anyPasswordWillWorkForNoPass = "any_password_will_work_with_nopass"
 )
 
 var (
@@ -54,9 +58,9 @@ var (
 	redisCustomCA *string
 
 	// redisUsername is the username for the redis server.
-	redisUsername = "default" // not real credentials
+	redisUsername *string = nil
 	// redisPassword is the password for the redis server.
-	redisPassword = "nopass" // not real credentials
+	redisPassword *string = nil
 
 	// maxNumGenTries is the maximum number of times to try to generate a unique key.
 	maxNumGenTries *int
@@ -81,17 +85,35 @@ type dangan struct {
 // NewDangan creates a new dangan client.
 func NewDangan() *dangan {
 	// check if the redis username and password are set
-	getEnvOrExit(monokumaUsernameEnv, &redisUsername)
-	getEnvOrExit(monokumaPasswordEnv, &redisPassword)
+	if len(*redisUsername) < 1 { // not given by flags
+		if redisUsername = getEnv(monokumaUsernameEnv); redisUsername == nil { // not given by env
+			fmt.Printf("username must be provided through env var %s or --redis-user\n", monokumaUsernameEnv)
+			os.Exit(1)
+		}
+	}
+	if redisPassword = getEnv(monokumaPasswordEnv); redisPassword == nil {
+		fmt.Printf("warning: password not given in %s, will attempt to use nopass\n", monokumaPasswordEnv)
+	}
+
+	// if user gave us credentials, then they might be using the "nopass" directive, where
+	// any given password will work.
+	if redisPassword == nil {
+		// assigning a pointer requires an lval address available
+		passlval := strings.Clone(anyPasswordWillWorkForNoPass)
+		redisPassword = &passlval
+	}
+
+	// Let's set the general options.
+	options := &redis.Options{
+		Addr:      *redisHost + ":" + rei.Itoa(*redisPort),
+		DB:        *redisDB,
+		Username:  *redisUsername,
+		Password:  *redisPassword,
+		TLSConfig: getRedisTLSConfig(),
+	}
 
 	// create a new redis client
-	rdb := redis.NewClient(&redis.Options{
-		Addr:      *redisHost + ":" + rei.Itoa(*redisPort),
-		Username:  redisUsername,
-		Password:  redisPassword,
-		DB:        *redisDB,
-		TLSConfig: getRedisTLSConfig(),
-	})
+	rdb := redis.NewClient(options)
 
 	// check if the redis server is reachable
 	d := &dangan{
@@ -151,8 +173,8 @@ func getRedisTLSConfig() *tls.Config {
 	}
 
 	// check if the redis client certificate and key exist.
-	ensureFileExists(*redisClientCert, "redis client certificate")
-	ensureFileExists(*redisClientKey, "redis client key")
+	pathMustExist(*redisClientCert, "redis client certificate")
+	pathMustExist(*redisClientKey, "redis client key")
 
 	// load the client certificate and key
 	tlsPair, err := tls.LoadX509KeyPair(*redisClientCert, *redisClientKey)
