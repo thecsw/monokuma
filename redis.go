@@ -263,6 +263,10 @@ func (d *dangan) getUniqueKey(customKey string) (string, error) {
 		if len(customKey) > customKeyMaxLength {
 			return "", fmt.Errorf("custom key is too long, max size is %d", customKeyMaxLength)
 		}
+		// Check the key against the regular expression.
+		if !keyRegexp.MatchString(customKey) {
+			return "", fmt.Errorf("key %s is invalid, needs to match %s", customKey, keyRegexpPattern)
+		}
 		// move on
 		exists, err := d.keyExists(keyToLinkTable, customKey)
 		// some generic error

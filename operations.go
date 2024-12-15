@@ -31,7 +31,7 @@ const (
 )
 
 // keyRegexpPattern is the regular expression pattern for a key.
-const keyRegexpPattern = `[-0-9a-zA-Z]{3,32}`
+const keyRegexpPattern = `[-0-9a-zA-Z]{3,37}`
 
 // keyRegexp is the regular expression for a key.
 var keyRegexp = regexp.MustCompile(`^` + keyRegexpPattern + `$`)
@@ -44,7 +44,7 @@ func operationCreateLink(linkReader io.Reader, customKey string) (string, Monoku
 		return "", Uncategorized, fmt.Errorf("reading the link: %v", err)
 	}
 
-	// Trim the link.
+	// Trim the link, a dirty sanitization.
 	link := strings.TrimSpace(string(linkBytes))
 
 	// If the link is empty, return an error.
@@ -59,12 +59,7 @@ func operationCreateLink(linkReader io.Reader, customKey string) (string, Monoku
 
 	// If the link does not match the regular expression, return an error.
 	if !URLRegexp.MatchString(link) {
-		return "", BadLink, fmt.Errorf("link is invalid")
-	}
-
-	// Check the key against the regular expression.
-	if !keyRegexp.MatchString(customKey) {
-		return "", BadKey, fmt.Errorf("key %s is invalid, needs to match %s", customKey, keyRegexpPattern)
+		return "", BadLink, fmt.Errorf("link is invalid, it needs to match regex: %s", URLRegexpPattern)
 	}
 
 	// Try to write the link.

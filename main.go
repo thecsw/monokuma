@@ -19,6 +19,11 @@ import (
 	"github.com/thecsw/rei"
 )
 
+const (
+	// why not
+	appName = "monokuma"
+)
+
 var (
 	// targetUrl is the URL shortener's target URL.
 	targetUrl *string
@@ -35,7 +40,7 @@ var (
 
 func main() {
 	// Only one monokuma instance can be running at a time
-	defer pid.Start("monokuma").Stop()
+	defer pid.Start(appName).Stop()
 
 	// Parse the flags.
 	targetUrl = flag.String("url", "https://photos.sandyuraz.com/", "the url with short urls")
@@ -46,7 +51,7 @@ func main() {
 	redisPort = flag.Int("redis-port", 6379, "redis port")
 	redisHost = flag.String("redis-host", "localhost", "redis host")
 	redisDB = flag.Int("redis-db", 0, "redis database")
-	redisUsername = flag.String("redis-user", "", "redis user")
+	redisUsername = flag.String("redis-user", appName, "redis user")
 
 	// Redis SSL specific.
 	redisTLS = flag.Bool("redis-tls", false, "use TLS")

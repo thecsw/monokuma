@@ -10,9 +10,14 @@ import (
 	"github.com/thecsw/rei"
 )
 
+const (
+	// it just works.
+	URLRegexpPattern = `^(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()!@:%_\+.~#?&\/\/=]*))$`
+)
+
 var (
 	// URLRegexp is a regular expression to match URLs.
-	URLRegexp = regexp.MustCompile(`(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()!@:%_\+.~#?&\/\/=]*))`)
+	URLRegexp = regexp.MustCompile(URLRegexpPattern)
 
 	// keysize is used to generate random string.
 	keysize *int
